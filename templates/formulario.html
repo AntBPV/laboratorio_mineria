@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ config.nombre }} · Predicción</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&family=DM+Mono&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0f1117;
+      --bg2:     #181b25;
+      --bg3:     #1e2235;
+      --border:  rgba(255,255,255,0.08);
+      --border2: rgba(255,255,255,0.16);
+      --accent:  #6ee7b7;
+      --text:    #e8eaf0;
+      --muted:   #8b8fa8;
+      --error:   #f87171;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 3rem 1.5rem 4rem;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background-image: radial-gradient(circle, rgba(110,231,183,0.05) 1px, transparent 1px);
+      background-size: 32px 32px;
+      pointer-events: none;
+    }
+
+    .content { position: relative; z-index: 1; width: 100%; max-width: 640px; }
+
+    /* ── Navegación ── */
+    .nav {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 2.5rem;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .nav a {
+      color: var(--accent);
+      text-decoration: none;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .nav a:hover { text-decoration: underline; }
+
+    /* ── Cabecera del ejercicio ── */
+    .ex-header {
+      display: flex; align-items: center; gap: 16px;
+      margin-bottom: 2rem;
+    }
+
+    .ex-icon {
+      width: 56px; height: 56px;
+      background: rgba(110,231,183,0.1);
+      border: 1px solid rgba(110,231,183,0.2);
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px;
+      flex-shrink: 0;
+    }
+
+    .ex-tag {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+
+    .ex-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.6rem;
+      font-weight: 400;
+    }
+
+    /* ── Panel del formulario ── */
+    .form-panel {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .panel-title {
+      font-size: 11px;
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 1.5rem;
+    }
+
+    /* ── Campo de entrada ── */
+    .field { margin-bottom: 1.4rem; }
+    .field:last-child { margin-bottom: 0; }
+
+    .field-header {
+      display: flex; justify-content: space-between; align-items: baseline;
+      margin-bottom: 6px;
+    }
+
+    .field-label {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .field-range {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .field-desc {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+
+    .input-wrap { position: relative; }
+
+    input[type="number"] {
+      width: 100%;
+      background: var(--bg3);
+      border: 1px solid var(--border2);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-family: 'DM Mono', monospace;
+      font-size: 15px;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s;
+      -moz-appearance: textfield;
+    }
+
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+    input[type="number"]:focus {
+      border-color: var(--accent);
+    }
+
+    input[type="number"].error {
+      border-color: var(--error);
+    }
+
+    .field-error {
+      font-size: 11px;
+      color: var(--error);
+      margin-top: 5px;
+      display: none;
+    }
+
+    /* ── Botón predecir ── */
+    .btn-predict {
+      width: 100%;
+      background: var(--accent);
+      color: #0a1a12;
+      border: none;
+      border-radius: 12px;
+      padding: 15px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      transition: opacity 0.2s, transform 0.15s;
+      margin-top: 1.5rem;
+    }
+
+    .btn-predict:hover { opacity: 0.88; }
+    .btn-predict:active { transform: scale(0.98); }
+    .btn-predict:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid rgba(0,0,0,0.2);
+      border-top-color: #0a1a12;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Panel de resultado ── */
+    .result-panel {
+      background: var(--bg2);
+      border: 1px solid rgba(110,231,183,0.25);
+      border-radius: 16px;
+      padding: 2rem;
+      display: none;
+      animation: fadeIn 0.4s ease;
+    }
+
+    @keyframes fadeIn { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform:none; } }
+
+    .result-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+    }
+
+    .result-value {
+      font-family: 'DM Serif Display', serif;
+      font-size: 3rem;
+      color: var(--accent);
+      line-height: 1.1;
+      margin-bottom: 0.25rem;
+    }
+
+    .result-unit {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 1.5rem;
+    }
+
+    /* Desglose de inputs */
+    .result-desglose {
+      border-top: 1px solid var(--border);
+      padding-top: 1.25rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 1rem;
+    }
+
+    .desglose-key {
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 3px;
+    }
+    .desglose-val {
+      font-family: 'DM Mono', monospace;
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    /* ── Error general ── */
+    .error-msg {
+      background: rgba(248,113,113,0.1);
+      border: 1px solid rgba(248,113,113,0.3);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 13px;
+      color: var(--error);
+      margin-top: 1rem;
+      display: none;
+    }
+
+    /* ── Botón reset ── */
+    .btn-reset {
+      background: transparent;
+      border: 1px solid var(--border2);
+      color: var(--muted);
+      border-radius: 10px;
+      padding: 10px 18px;
+      font-size: 13px;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      margin-top: 1rem;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .btn-reset:hover { color: var(--text); border-color: var(--border2); }
+  </style>
+</head>
+<body>
+<div class="content">
+
+  <!-- Navegación -->
+  <nav class="nav">
+    <a href="/">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <path d="M11 7H3M7 11L3 7l4-4" stroke="#6ee7b7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Inicio
+    </a>
+    <span>/</span>
+    <span>{{ config.nombre }}</span>
+  </nav>
+
+  <!-- Cabecera -->
+  <div class="ex-header">
+    <div class="ex-icon">{{ config.icono }}</div>
+    <div>
+      <div class="ex-tag">Regresión Lineal Múltiple</div>
+      <div class="ex-title">{{ config.nombre }}</div>
+    </div>
+  </div>
+
+  <!-- Formulario -->
+  <div class="form-panel">
+    <div class="panel-title">Ingresa los valores de las variables</div>
+
+    <form id="pred-form" novalidate>
+      {% for var in config.variables %}
+      <div class="field">
+        <div class="field-header">
+          <label class="field-label" for="{{ var.id }}">{{ var.label }}</label>
+          <span class="field-range">
+            {{ var.min }} – {{ var.max }}
+          </span>
+        </div>
+        <p class="field-desc">{{ var.descripcion }}</p>
+        <div class="input-wrap">
+          <input
+            type="number"
+            id="{{ var.id }}"
+            name="{{ var.id }}"
+            min="{{ var.min }}"
+            max="{{ var.max }}"
+            step="{{ var.step }}"
+            value="{{ var.default }}"
+            required
+          >
+        </div>
+        <div class="field-error" id="err-{{ var.id }}">
+          Valor fuera del rango permitido ({{ var.min }} – {{ var.max }})
+        </div>
+      </div>
+      {% endfor %}
+
+      <button type="submit" class="btn-predict" id="btn-pred">
+        <div class="spinner" id="spinner"></div>
+        <span id="btn-text">Calcular predicción</span>
+      </button>
+    </form>
+
+    <div class="error-msg" id="error-general"></div>
+  </div>
+
+  <!-- Panel de resultado (oculto hasta predecir) -->
+  <div class="result-panel" id="result-panel">
+    <div class="result-label">Predicción del modelo</div>
+    <div class="result-value" id="res-valor">—</div>
+    <div class="result-unit">{{ config.unidad }} · {{ config.nombre }}</div>
+    <div class="result-desglose" id="res-desglose"></div>
+    <button class="btn-reset" onclick="resetForm()">Nueva predicción</button>
+  </div>
+
+</div>
+
+<script>
+  const EJERCICIO = "{{ ejercicio_id }}";
+  const VARIABLES = {{ config.variables | tojson }};
+  const UNIDAD    = "{{ config.unidad }}";
+
+  const form        = document.getElementById('pred-form');
+  const btnPred     = document.getElementById('btn-pred');
+  const btnText     = document.getElementById('btn-text');
+  const spinner     = document.getElementById('spinner');
+  const resultPanel = document.getElementById('result-panel');
+  const errorGeneral= document.getElementById('error-general');
+
+  function validarCampos() {
+    let ok = true;
+    VARIABLES.forEach(v => {
+      const input = document.getElementById(v.id);
+      const errEl = document.getElementById('err-' + v.id);
+      const val   = parseFloat(input.value);
+      const fuera = isNaN(val) || val < v.min || val > v.max;
+      input.classList.toggle('error', fuera);
+      errEl.style.display = fuera ? 'block' : 'none';
+      if (fuera) ok = false;
+    });
+    return ok;
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!validarCampos()) return;
+
+    // UI: loading
+    btnPred.disabled = true;
+    spinner.style.display = 'block';
+    btnText.textContent = 'Calculando…';
+    resultPanel.style.display = 'none';
+    errorGeneral.style.display = 'none';
+
+    // Construir payload
+    const payload = {};
+    VARIABLES.forEach(v => {
+      payload[v.id] = parseFloat(document.getElementById(v.id).value);
+    });
+
+    try {
+      const resp = await fetch(`/api/predecir/${EJERCICIO}`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(payload),
+      });
+      const data = await resp.json();
+
+      if (!resp.ok) throw new Error(data.error || 'Error del servidor');
+
+      // Mostrar resultado
+      const pred = data.prediccion;
+      document.getElementById('res-valor').textContent =
+        pred.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+      // Desglose de variables usadas
+      const desgloseEl = document.getElementById('res-desglose');
+      desgloseEl.innerHTML = '';
+      VARIABLES.forEach(v => {
+        const item = document.createElement('div');
+        item.className = 'desglose-item';
+        item.innerHTML = `
+          <div class="desglose-key">${v.label}</div>
+          <div class="desglose-val">${payload[v.id]}</div>
+        `;
+        desgloseEl.appendChild(item);
+      });
+
+      resultPanel.style.display = 'block';
+      resultPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    } catch (err) {
+      errorGeneral.textContent = 'Error: ' + err.message;
+      errorGeneral.style.display = 'block';
+    } finally {
+      btnPred.disabled = false;
+      spinner.style.display = 'none';
+      btnText.textContent = 'Calcular predicción';
+    }
+  });
+
+  function resetForm() {
+    resultPanel.style.display = 'none';
+    errorGeneral.style.display = 'none';
+    VARIABLES.forEach(v => {
+      const input = document.getElementById(v.id);
+      input.value = v.default;
+      input.classList.remove('error');
+      document.getElementById('err-' + v.id).style.display = 'none';
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // Limpiar error de campo al escribir
+  VARIABLES.forEach(v => {
+    document.getElementById(v.id).addEventListener('input', () => {
+      document.getElementById(v.id).classList.remove('error');
+      document.getElementById('err-' + v.id).style.display = 'none';
+    });
+  });
+</script>
+</body>
+</html>
